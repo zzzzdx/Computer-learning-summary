@@ -47,6 +47,8 @@ class new_allocator
 ```
 
 ## vector
+
+### 内部成员
 ```c++
 template<typename _Tp, typename _Alloc = std::allocator<_Tp> >
     class vector : protected _Vector_base<_Tp, _Alloc>
@@ -67,8 +69,10 @@ struct _Vector_impl
 ```
 
 
-## Rb_tree
+## _Rb_tree
 Rb_tree是map、multimap、set、multiset的底层数据结构
+
+### 内部成员
 
 ```c++
 struct _Rb_tree_impl
@@ -89,6 +93,25 @@ printf("%d\n",i==m.end()); //1
 printf("%d %d\n",i->first,i->second);//2,3
 ```
 
+### 析构
+
+析构没有用后序遍历，而是遍历树每个左枝，以此为起点递归调用，减少递归深度？
+```c++
+~_Rb_tree() { _M_erase(_M_begin()); } //实参为根结点
+
+void _M_erase(_Link_type __x)
+{
+	// Erase without rebalancing.
+	while (__x != 0)
+	{
+		_M_erase(_S_right(__x));
+		_Link_type __y = _S_left(__x);
+		_M_drop_node(__x);
+		__x = __y;
+	}
+}
+```
+
 ### set
 
 set不允许修改值，因为键和值类型相同，破坏树结构，且返回的迭代器为以下类型
@@ -105,3 +128,27 @@ struct _Rb_tree_const_iterator
 	_Self& operator++();
 }
 ```
+
+### 使用
+
+_Rb_tree相比_Hashtable空间利用率高，且有顺序，但排序的依据是key。
+
+1. insert相关
+   
+   set,map的insert有多种重载。与vector，list等无序容器insert需要指定插入位置迭代器不同，红黑树的插入有自己的平衡逻辑，无法指定位置，但有方法影响。
+   ```c++
+   //常用方式
+   std::pair<iterator,bool> insert( value_type&& value );
+   //无法指定位置
+   //但插入value到尽可能接近，恰好前于hint的位置
+   //注意返回值不同
+   iterator insert( iterator hint, const value_type& value );
+
+   ```
+   
+   力扣460LFU，采用红黑树记录排序。使用红黑树要注意排序的比较条件，key的类型是否内置、排序条件是否多个。lfu的排序条件：使用次数+时间戳(次数相同时)。
+
+   方法一：构建包含使用次数和时间戳的结构体_node,重载比较函数，利用set<_node>排序
+
+   方法二: 应为比较条件只有两个，可以使用multimap排序，key为使用次数，内置类型无需重载。考虑到次数相同，插入时使用insert(lower_bound(fre+1),value)，向更多次数之前插入
+
