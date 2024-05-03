@@ -21,3 +21,9 @@ Windows中窗口句柄的创建、线程事件队列的分发 -> QEventLoop、QT
 
 ### 信号、槽
 理解的两个角度：观察者模式，事件驱动
+
+### 多线程注意事项
+由于QObject的线程相关性，gui响应等因素，多线程的编程方式更加不同。尤其是在线程同步时，为避免阻塞gui，考虑qeventloop代替锁。
+
+## network
+qtcpsock的close方法是异步的，不能直接delete会崩溃。QObject析构函数为虚函数，使用QObject::deleteLater,利用事件循环延迟delete，待处理完所有事件后析构，更安全。
