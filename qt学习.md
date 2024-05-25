@@ -15,11 +15,15 @@ Controller有点像外观模式，调用各个Model，对View提供完整接口
 
 ### 事件循环
 https://blog.csdn.net/kupepoem/article/details/121844578
-https://blog.csdn.net/qq_26221775/article/details/136776793https://blog.csdn.net/qq_43331089/article/details/124444497
+https://blog.csdn.net/qq_26221775/article/details/136776793
+https://blog.csdn.net/qq_43331089/article/details/124444497
 
 Windows中窗口句柄的创建、线程事件队列的分发 -> QEventLoop、QThreadData(tls)、QObject
 
 ### 信号、槽
+https://www.cnblogs.com/swarmbees/p/10816139.html
+
+
 理解的两个角度：观察者模式，事件驱动
 
 ### 多线程注意事项
