@@ -68,6 +68,80 @@ struct _Vector_impl
 	: public _Tp_alloc_type, public _Vector_impl_data;
 ```
 
+## deque
+### 内部成员
+```c++
+struct _Deque_impl
+      : public _Tp_alloc_type, public _Deque_impl_data;
+
+struct _Deque_impl_data
+{
+	//buffer指针数组
+	_Map_pointer _M_map;
+	size_t _M_map_size;
+	//首尾迭代器
+	iterator _M_start;
+	iterator _M_finish;
+}
+```
+
+### 主要方法
+```c++
+_Deque_impl_data _M_impl;
+iterator begin() { return this->_M_impl._M_start; }
+iterator end() { return this->_M_impl._M_finish; }
+reference operator[](size_type __n)
+{
+	//利用迭代器
+	return this->_M_impl._M_start[difference_type(__n)];
+}
+
+//插入
+void push_front(const value_type& __x)
+{
+	if (this->_M_impl._M_start._M_cur != this->_M_impl._M_start._M_first)
+	{
+		//cur前还有空间，直接用allocator构造
+		_Alloc_traits::construct(this->_M_impl,this->_M_impl._M_start._M_cur - 1,__x);
+		--this->_M_impl._M_start._M_cur;
+	}
+	else
+		_M_push_front_aux(__x);
+}
+
+void _M_push_front_aux(_Args&&... __args)
+{
+	//检查_M_start._M_node前是否有空间，没有就调整map，两种方式
+	//1.如果map的size大于所需buffer数两倍，说明后面还有很多空间，则将数据向后移动
+	//2.否则扩容map，new_size=old_size+nodes_to_add+2，并为start finish迭代器设置新的map指针
+	_M_reserve_map_at_front();
+
+	//构造新的buffer，放入map中
+	*(this->_M_impl._M_start._M_node - 1) = this->_M_allocate_node();
+
+	//移动start迭代器
+	this->_M_impl._M_start._M_set_node(this->_M_impl._M_start._M_node - 1);
+	this->_M_impl._M_start._M_cur = this->_M_impl._M_start._M_last - 1;
+
+	//构造
+	_Alloc_traits::construct(this->_M_impl, this->_M_impl._M_start._M_cur,std::forward<_Args>(__args)...);
+}
+
+//删除
+void pop_front() _GLIBCXX_NOEXCEPT
+{
+	//判断析构的同时是否释放buffer
+	if (this->_M_impl._M_start._M_cur!= this->_M_impl._M_start._M_last - 1)
+	{
+		_Alloc_traits::destroy(_M_get_Tp_allocator(),this->_M_impl._M_start._M_cur);
+		++this->_M_impl._M_start._M_cur;
+	}
+	else
+		_M_pop_front_aux();
+}
+
+
+```
 
 ## _Rb_tree
 Rb_tree是map、multimap、set、multiset的底层数据结构
