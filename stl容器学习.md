@@ -14,14 +14,17 @@ class new_allocator
 	struct rebind
 	{ typedef new_allocator<_Tp1> other; };
 
-	//内存申请使用 new
+	//内存申请使用 operator new
+	//区分 operator new 和 new operator
+	//operator new 是函数负责调用malloc申请内存，构造由placement new负责
+	//new 是 new operator
 	_GLIBCXX_NODISCARD _Tp*
     allocate(size_type __n, const void* = static_cast<const void*>(0))
     {
 		return static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
 	}
 
-	//释放用 delete
+	//释放用 operator delete
 	void
     deallocate(_Tp* __p, size_type __t __attribute__ ((__unused__)))
 	{
@@ -68,7 +71,70 @@ struct _Vector_impl
 	: public _Tp_alloc_type, public _Vector_impl_data;
 ```
 
+## list
+### 迭代器
+```c++
+template<typename _Tp>
+struct _List_iterator
+{
+	//对指针的封装
+	__detail::_List_node_base* _M_node;
+}
+```
+### 结点
+```c++
+//双向链表
+struct _List_node_base
+{
+	_List_node_base* _M_next;
+	_List_node_base* _M_prev;
+}
+```
+### 内部成员
+```c++
+struct _List_impl : public _Node_alloc_type
+{
+	__detail::_List_node_header _M_node;
+}
+
+struct _List_node_header : public _List_node_base
+{
+	std::size_t _M_size;
+}
+```
+
 ## deque
+### 迭代器
+```c++
+template<typename _Tp, typename _Ref, typename _Ptr>
+struct _Deque_iterator
+{
+	//buffer
+	_Elt_pointer _M_cur;
+	_Elt_pointer _M_first;
+	_Elt_pointer _M_last;
+	//deque的map
+	_Map_pointer _M_node;
+
+	_Self& operator++()
+	{
+		++_M_cur;
+		if (_M_cur == _M_last)
+		{
+			_M_set_node(_M_node + 1);
+			_M_cur = _M_first;
+		}
+		return *this;
+	}
+
+	void _M_set_node(_Map_pointer __new_node) _GLIBCXX_NOEXCEPT
+	{
+		_M_node = __new_node;
+		_M_first = *__new_node;
+		_M_last = _M_first + difference_type(_S_buffer_size());
+	}
+}
+```
 ### 内部成员
 ```c++
 struct _Deque_impl
@@ -226,3 +292,8 @@ _Rb_tree相比_Hashtable空间利用率高，且有顺序，但排序的依据�
 
    方法二: 应为比较条件只有两个，可以使用multimap排序，key为使用次数，内置类型无需重载。考虑到次数相同，插入时使用insert(lower_bound(fre+1),value)，向更多次数之前插入
 
+
+# stl算法
+
+## sort
+https://www.cnblogs.com/fengcc/p/5256337.html
