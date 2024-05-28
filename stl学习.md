@@ -1,4 +1,4 @@
-# stl容器学习总结
+# stl容器
 
 ## allocator
 负责内存申请释放，对象构造析构
@@ -297,3 +297,60 @@ _Rb_tree相比_Hashtable空间利用率高，且有顺序，但排序的依据�
 
 ## sort
 https://www.cnblogs.com/fengcc/p/5256337.html
+
+# 智能指针
+## shared_ptr
+https://blog.csdn.net/qq_37654704/article/details/107885315
+
+```c++
+//shared_ptr继承该类
+template<typename _Tp, _Lock_policy _Lp>
+class __shared_ptr : public __shared_ptr_access<_Tp, _Lp>
+{
+	element_type*	   _M_ptr;         // Contained pointer.
+    __shared_count<_Lp>  _M_refcount;    // Reference counter.
+}
+
+//raii机制由该类实现
+template<_Lock_policy _Lp>
+class __shared_count
+{
+	_Sp_counted_base<_Lp>*  _M_pi;
+}
+
+//引用计数
+//shared_ptr和 weak_ptr引用此类
+//_M_weak_count==0时，才析构
+template<_Lock_policy _Lp = __default_lock_policy>
+class _Sp_counted_base : public _Mutex_base<_Lp>
+{
+	typedef int _Atomic_word;
+	_Atomic_word  _M_use_count;  
+    _Atomic_word  _M_weak_count;
+}
+
+//delete内存管理，引用计数由该类实现
+template<typename _Ptr, _Lock_policy _Lp>
+class _Sp_counted_ptr final : public _Sp_counted_base<_Lp>
+{
+	_Ptr             _M_ptr;
+}
+
+//自定义删除器对于unique_ptr是模板参数，因为把他作为成员变量
+//对于shared_ptr不是，因为__shared_count引用的基类指针_Sp_counted_base，多态屏蔽了差异
+
+//自定义删除器，引用计数
+// Support for custom deleter and/or allocator
+template<typename _Ptr, typename _Deleter, typename _Alloc, _Lock_policy _Lp>
+class _Sp_counted_deleter final : public _Sp_counted_base<_Lp>；
+```
+
+## weak_ptr
+```c++
+template<typename _Tp, _Lock_policy _Lp>
+class __weak_ptr
+{
+	element_type*	 _M_ptr;     
+    __weak_count<_Lp>  _M_refcount;
+}
+```
