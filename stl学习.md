@@ -318,7 +318,7 @@ class __shared_count
 	_Sp_counted_base<_Lp>*  _M_pi;
 }
 
-//引用计数
+//引用计数+内存管理
 //shared_ptr和 weak_ptr引用此类
 //_M_weak_count==0时，才析构
 template<_Lock_policy _Lp = __default_lock_policy>
@@ -327,6 +327,24 @@ class _Sp_counted_base : public _Mutex_base<_Lp>
 	typedef int _Atomic_word;
 	_Atomic_word  _M_use_count;  
     _Atomic_word  _M_weak_count;
+
+	virtual void _M_dispose() noexcept = 0;
+
+	//由__shared_count调用
+	//类似模板方法，_M_dispose为钩子函数，由子类实现
+	void _M_release() noexcept
+    {
+		//如果智能指针引用计数为0
+		if (__gnu_cxx::__exchange_and_add_dispatch(&_M_use_count, -1) == 1)
+		{
+			//内存管理
+			_M_dispose();
+
+			//如果弱引用也为0,析构自己
+			if (__gnu_cxx::__exchange_and_add_dispatch(&_M_weak_count, -1) == 1)
+				_M_destroy();
+		}
+    }
 }
 
 //delete内存管理，引用计数由该类实现
